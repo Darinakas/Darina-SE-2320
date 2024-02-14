@@ -1,0 +1,136 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
+import java.util.Scanner;
+
+public class Main {
+
+    private static final String JDBC_URL = "jdbc:postgresql://localhost:5433/postgres";
+    private static final String USER = "postgres";
+    private static final String PASSWORD = "admin";
+
+    public static void main(String[] args) {
+        try (Connection connection = DriverManager.getConnection(JDBC_URL, USER, PASSWORD)) {
+            initializeDatabase(connection);
+            displayMenu();
+
+            Scanner scanner = new Scanner(System.in);
+            int choice = scanner.nextInt();
+
+            while (choice != 0) {
+                switch (choice) {
+                    case 1:
+                        createTask(connection);
+                        break;
+                    case 2:
+                        readTasks(connection);
+                        break;
+                    case 3:
+                        updateTask(connection);
+                        break;
+                    case 4:
+                        deleteTask(connection);
+                        break;
+                    default:
+                        System.out.println("Invalid choice. Please try again.");
+                        break;
+                }
+
+                displayMenu();
+                choice = scanner.nextInt();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void initializeDatabase(Connection connection) throws SQLException {
+        String createTableSQL = "CREATE TABLE IF NOT EXISTS tasks (id SERIAL PRIMARY KEY, description VARCHAR(255))";
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate(createTableSQL);
+        }
+    }
+
+    private static void displayMenu() {
+        System.out.println("Task Manager Menu:");
+        System.out.println("1. Create Task");
+        System.out.println("2. Read Tasks");
+        System.out.println("3. Update Task");
+        System.out.println("4. Delete Task");
+        System.out.println("0. Exit");
+        System.out.print("Enter your choice: ");
+    }
+
+    private static void createTask(Connection connection) throws SQLException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter task description: ");
+        String description = scanner.nextLine();
+
+        String insertSQL = "INSERT INTO tasks (description) VALUES (?)";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(insertSQL)) {
+            preparedStatement.setString(1, description);
+            preparedStatement.executeUpdate();
+            System.out.println("Task created successfully.");
+        }
+    }
+
+    private static void readTasks(Connection connection) throws SQLException {
+        String selectSQL = "SELECT * FROM tasks";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(selectSQL)) {
+
+            System.out.println("Tasks:");
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String description = resultSet.getString("description");
+                System.out.println("ID: " + id + ", Description: " + description);
+            }
+        }
+    }
+
+    private static void updateTask(Connection connection) throws SQLException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter task ID to update: ");
+        int taskId = scanner.nextInt();
+        scanner.nextLine(); // consume the newline character
+
+        System.out.print("Enter new task description: ");
+        String newDescription = scanner.nextLine();
+
+        String updateSQL = "UPDATE tasks SET description = ? WHERE id = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(updateSQL)) {
+            preparedStatement.setString(1, newDescription);
+            preparedStatement.setInt(2, taskId);
+            int rowsAffected = preparedStatement.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Task updated successfully.");
+            } else {
+                System.out.println("Task not found.");
+            }
+        }
+    }
+
+    private static void deleteTask(Connection connection) throws SQLException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter task ID to delete: ");
+        int taskId = scanner.nextInt();
+
+        String deleteSQL = "DELETE FROM tasks WHERE id = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(deleteSQL)) {
+            preparedStatement.setInt(1, taskId);
+            int rowsAffected = preparedStatement.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Task deleted successfully.");
+            } else {
+                System.out.println("Task not found.");
+            }
+        }
+    }
+}
