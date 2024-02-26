@@ -1,0 +1,72 @@
+import java.util.ArrayList;
+import java.util.List;
+
+
+interface Observer {
+    void update(String notification);
+}
+
+
+class NotificationSystem {
+    private List<Observer> subscribers = new ArrayList<>();
+
+    public void subscribe(Observer observer) {
+        subscribers.add(observer);
+    }
+
+    public void unsubscribe(Observer observer) {
+        subscribers.remove(observer);
+    }
+
+    public void notifySubscribers(String notification) {
+        for (Observer subscriber : subscribers) {
+            subscriber.update(notification);
+        }
+    }
+
+    public void sendNotification(String notification) {
+        System.out.println("Sending notification: " + notification);
+        notifySubscribers(notification);
+    }
+}
+
+
+class User implements Observer {
+    private String username;
+
+    public User(String username) {
+        this.username = username;
+    }
+
+    @Override
+    public void update(String notification) {
+        System.out.println(username + " received notification: " + notification);
+    }
+}
+
+
+public class NotificationSystemProject {
+    public static void main(String[] args) {
+        NotificationSystem notificationSystem = new NotificationSystem();
+
+
+        User user1 = new User("Darina");
+        User user2 = new User("Adilet");
+        User user3 = new User("Aray");
+
+
+        notificationSystem.subscribe(user1);
+        notificationSystem.subscribe(user2);
+        notificationSystem.subscribe(user3);
+
+
+        notificationSystem.sendNotification("New feature available!");
+        notificationSystem.sendNotification("Upcoming maintenance scheduled.");
+
+
+        notificationSystem.unsubscribe(user2);
+
+
+        notificationSystem.sendNotification("Reminder: Meeting tomorrow.");
+    }
+}
